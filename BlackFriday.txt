@@ -1,0 +1,255 @@
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+import sklearn
+#To visualize the whole grid
+pd.options.display.max_columns = 999
+
+#Kaggle divides the dataset already into Train and Test data
+train = pd.read_csv("train.csv")
+test = pd.read_csv("test.csv")
+train.head()
+
+test.head()
+
+train.info()
+
+train.describe()
+
+test.describe()
+
+# Check for duplicates
+idsUnique = len(set(train.User_ID))
+idsTotal = train.shape[0]
+idsDupli = idsTotal - idsUnique
+print("There are " + str(idsDupli) + " duplicate IDs for " + str(idsTotal) + " total entries")
+
+plt.style.use('fivethirtyeight')
+plt.figure(figsize=(12,7))
+sns.distplot(train.Purchase, bins = 25)
+plt.xlabel("Amount spent in Purchase")
+plt.ylabel("Number of Buyers")
+plt.title("Purchase amount Distribution")
+
+print ("Skew is:", train.Purchase.skew())
+print("Kurtosis: %f" % train.Purchase.kurt())
+
+numeric_features = train.select_dtypes(include=[np.number])
+numeric_features.dtypes
+
+sns.countplot(train.Occupation)
+
+sns.countplot(train.Marital_Status)
+
+sns.countplot(train.Product_Category_1)
+
+sns.countplot(train.Product_Category_2)
+
+sns.countplot(train.Product_Category_3)
+
+corr = numeric_features.corr()
+print (corr['Purchase'].sort_values(ascending=False)[:10], '\n')
+print (corr['Purchase'].sort_values(ascending=False)[-10:])
+
+#correlation matrix
+f, ax = plt.subplots(figsize=(20, 9))
+sns.heatmap(corr, vmax=.8,annot_kws={'size': 20}, annot=True);
+
+sns.countplot(train.Gender)
+
+sns.countplot(train.Age)
+
+sns.countplot(train.City_Category)
+
+sns.countplot(train.Stay_In_Current_City_Years)
+
+Occupation_pivot = \
+train.pivot_table(index='Occupation', values="Purchase", aggfunc=np.mean)
+Occupation_pivot.plot(kind='bar', color='blue',figsize=(12,7))
+plt.xlabel("Occupation")
+plt.ylabel("Purchase")
+plt.title("Occupation and Purchase Analysis")
+plt.xticks(rotation=0)
+plt.show()
+
+Occupation_pivot = \
+train.pivot_table(index='Marital_Status', values="Purchase", aggfunc=np.mean)
+Occupation_pivot.plot(kind='bar', color='blue',figsize=(12,7))
+plt.xlabel("Marital_Status")
+plt.ylabel("Purchase")
+plt.title("Marital_Status and Purchase Analysis")
+plt.xticks(rotation=0)
+plt.show()
+
+Occupation_pivot = \
+train.pivot_table(index='Product_Category_1', values="Purchase", aggfunc=np.mean)
+Occupation_pivot.plot(kind='bar', color='blue',figsize=(12,7))
+plt.xlabel("Product_Category_1")
+plt.ylabel("Purchase")
+plt.title("Product_Category_1 and Purchase Analysis")
+plt.xticks(rotation=0)
+plt.show()
+
+Occupation_pivot = \
+train.pivot_table(index='Gender', values="Purchase", aggfunc=np.mean)
+Occupation_pivot.plot(kind='bar', color='blue',figsize=(12,7))
+plt.xlabel("Gender")
+plt.ylabel("Purchase")
+plt.title("Gender and Purchase Analysis")
+plt.xticks(rotation=0)
+plt.show()
+
+Occupation_pivot = \
+train.pivot_table(index='Age', values="Purchase", aggfunc=np.mean)
+Occupation_pivot.plot(kind='bar', color='blue',figsize=(12,7))
+plt.xlabel("Age")
+plt.ylabel("Purchase")
+plt.title("Age and Purchase Analysis")
+plt.xticks(rotation=0)
+plt.show()
+
+Occupation_pivot = \
+train.pivot_table(index='City_Category', values="Purchase", aggfunc=np.mean)
+Occupation_pivot.plot(kind='bar', color='blue',figsize=(12,7))
+plt.xlabel("City_Category")
+plt.ylabel("Purchase")
+plt.title("City_Category and Purchase Analysis")
+plt.xticks(rotation=0)
+plt.show()
+
+Occupation_pivot = \
+train.pivot_table(index='Stay_In_Current_City_Years', values="Purchase", aggfunc=np.mean)
+Occupation_pivot.plot(kind='bar', color='blue',figsize=(12,7))
+plt.xlabel("Stay_In_Current_City_Years")
+plt.ylabel("Purchase")
+plt.title("Stay_In_Current_City_Years and Purchase Analysis")
+plt.xticks(rotation=0)
+plt.show()
+
+# Join Train and Test Dataset
+train['source']='train'
+test['source']='test'
+data = pd.concat([train,test], ignore_index = True, sort = False)
+print(train.shape, test.shape, data.shape)
+
+#Check the percentage of null values per variable
+data.isnull().sum()/data.shape[0]*100
+
+data["Product_Category_2"]= \
+data["Product_Category_2"].fillna(-2.0).astype("float")
+data.Product_Category_2.value_counts().sort_index()
+
+data["Product_Category_3"]= \
+data["Product_Category_3"].fillna(-2.0).astype("float")
+data.Product_Category_3.value_counts().sort_index()
+
+#Get index of all columns with product_category_1 equal 19 or 20 from train
+condition = data.index[(data.Product_Category_1.isin([19,20])) & (data.source == "train")]
+data = data.drop(condition)
+
+#Apply function len(unique()) to every data variable
+data.apply(lambda x: len(x.unique()))
+
+#Filter categorical variables and get dataframe will all strings columns names except Item_identfier and outlet_identifier
+category_cols = data.select_dtypes(include=['object']).columns.drop(["source"])
+#Print frequency of categories
+for col in category_cols:
+ #Number of times each value appears in the column
+ frequency = data[col].value_counts()
+ print("\nThis is the frequency distribution for " + col + ":")
+ print(frequency)
+
+#Turn gender binary
+gender_dict = {'F':0, 'M':1}
+data["Gender"] = data["Gender"].apply(lambda line: gender_dict[line])
+data["Gender"].value_counts()
+
+# Giving Age Numerical values
+age_dict = {'0-17':0, '18-25':1, '26-35':2, '36-45':3, '46-50':4, '51-55':5, '55+':6}
+data["Age"] = data["Age"].apply(lambda line: age_dict[line])
+data["Age"].value_counts()
+
+city_dict = {'A':0, 'B':1, 'C':2}
+data["City_Category"] = data["City_Category"].apply(lambda line: city_dict[line])
+data["City_Category"].value_counts()
+
+#Import library:
+from sklearn.preprocessing import LabelEncoder
+le = LabelEncoder()
+#New variable for outlet
+data['Stay_In_Current_City_Years'] = le.fit_transform(data['Stay_In_Current_City_Years'])
+    
+#Dummy Variables:
+data = pd.get_dummies(data, columns=['Stay_In_Current_City_Years'])
+data.dtypes
+
+# feature representing the count of each user
+def getCountVar(compute_df, count_df, var_name):
+    grouped_df = count_df.groupby(var_name)
+    count_dict = {}
+    for name, group in grouped_df:
+        count_dict[name] = group.shape[0]
+    count_list = []
+    for index, row in compute_df.iterrows():
+        name = row[var_name]
+        count_list.append(count_dict.get(name, 0))
+    return count_list
+
+#data[“User_ID_Count”] = getCountVar(data, data, “User_ID”)
+data["Age_Count"] =getCountVar(data, data, "Age")
+data["Occupation_Count"] =getCountVar(data, data, "Occupation")
+data["Product_Category_1_Count"] =getCountVar(data, data,"Product_Category_1")
+data["Product_Category_2_Count"] =getCountVar(data, data, "Product_Category_2")
+data["Product_Category_3_Count"] =getCountVar(data, data,"Product_Category_3")
+data["Product_ID_Count"] =getCountVar(data, data, "Product_ID")
+
+#Divide into test and train:
+train = data.loc[data['source']=="train"]
+test = data.loc[data['source']=="test"]
+#Drop unnecessary columns:
+test.drop(['source'],axis=1,inplace=True)
+train.drop(['source'],axis=1,inplace=True)
+#Export files as modified versions:
+train.to_csv("BlackFriday/train_modified.csv",index=False)
+test.to_csv("BlackFriday/test_modified.csv",index=False)
+
+train_df = pd.read_csv('BlackFriday/train_modified.csv')
+test_df = pd.read_csv('BlackFriday/test_modified.csv')
+
+#Define target and ID columns:
+target = 'Item_Outlet_Sales'
+IDcol = ['Item_Identifier','Outlet_Identifier']
+#Define target and ID columns:
+target = 'Purchase'
+IDcol = ['User_ID','Product_ID']
+from sklearn import cross_validation, metrics
+def modelfit(alg, dtrain, dtest, predictors, target, IDcol, filename):
+    #Fit the algorithm on the data
+    alg.fit(dtrain[predictors], dtrain[target])
+        
+    #Predict training set:
+    dtrain_predictions = alg.predict(dtrain[predictors])
+#Perform cross-validation:
+    cv_score = cross_validation.cross_val_score(alg, dtrain[predictors],(dtrain[target]) , cv=20, scoring='neg_mean_squared_error')
+    cv_score = np.sqrt(np.abs(cv_score))
+    
+    #Print model report:
+    print("\nModel Report")
+    print("RMSE : %.4g" % np.sqrt(metrics.mean_squared_error((dtrain[target]).values, dtrain_predictions)))
+    print("CV Score : Mean - %.4g | Std - %.4g | Min - %.4g | Max - %.4g" % (np.mean(cv_score),np.std(cv_score),np.min(cv_score),np.max(cv_score)))
+    
+    #Predict on testing data:
+    dtest[target] = alg.predict(dtest[predictors])
+    
+    #Export submission file:
+    IDcol.append(target)
+    submission = pd.DataFrame({ x: dtest[x] for x in IDcol})
+    submission.to_csv(filename, index=False)
+
+from sklearn.linear_model import LinearRegression
+LR = LinearRegression(normalize=True)
+predictors = train_df.columns.drop(['Purchase','Product_ID','User_ID'])
+modelfit(LR, train_df, test_df, predictors, target, IDcol, 'LR.csv')
+coef1 = pd.Series(LR.coef_, predictors).sort_values()
+coef1.plot(kind='bar', title='Model Coefficients')
